@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1062144150607",
+    "project_id": "invoice-manager-a768c",
+    "storage_bucket": "invoice-manager-a768c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062144150607:android:e566ea5b3a51dcbba0ae3a",
+        "android_client_info": {
+          "package_name": "com.example.invoice_manager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062144150607-3891k4sitg1o4237b50i495mr4kh7gn4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzhSJ5q6xn1nZ7EmWWYQ_CFQdQSQFacJE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062144150607-3891k4sitg1o4237b50i495mr4kh7gn4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
