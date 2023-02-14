@@ -74,10 +74,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     TextFormField(
                       key: const ValueKey('email'),
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'Email Address'),
+                      decoration: const InputDecoration(labelText: 'Adres email'),
                       validator: (val) {
                         if (val == null || val.isEmpty || !val.contains('@')) {
-                          return 'Please enter a valid email address';
+                          return 'Wprowadź poprawny adres email';
                         }
                         return null;
                       },
@@ -89,10 +89,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     TextFormField(
                       key: const ValueKey('password'),
                       obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Password'),
+                      decoration: const InputDecoration(labelText: 'Hasło'),
                       validator: (val) {
                         if (val == null || val.length < 7) {
-                          return 'Please enter a valid password';
+                          return 'Hasło powinno mieć conajmniej 7 znaków';
                         }
                         return null;
                       },
@@ -105,7 +105,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     if (!isLoading)
                       ElevatedButton(
                         onPressed: () => submit(),
-                        child: Text(isLoginMode ? 'Login' : 'Register'),
+                        child: Text(isLoginMode ? 'Zaloguj się' : 'Zarejestruj się'),
                       ),
                     if (!isLoading)
                       TextButton(
@@ -114,7 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               isLoginMode = !isLoginMode;
                             });
                           },
-                          child: Text(isLoginMode ? 'Create new account' : 'I already have an account'))
+                          child: Text(isLoginMode ? 'Utwórz nowe konto' : 'Już mam konto'))
                   ],
                 ),
               ),
