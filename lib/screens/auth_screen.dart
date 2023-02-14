@@ -38,6 +38,7 @@ class _AuthScreenState extends State<AuthScreen> {
           await FirebaseFirestore.instance.collection("users").doc(authInstance.currentUser!.uid).set({});
         }
       }
+      navigator.pushReplacement(MaterialPageRoute(builder: (_) => const InvoiceScreen()));
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -47,12 +48,6 @@ class _AuthScreenState extends State<AuthScreen> {
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
-    }
-
-    print(authInstance.currentUser);
-
-    if (authInstance.currentUser != null) {
-      navigator.pushReplacement(MaterialPageRoute(builder: (_) => const InvoiceScreen()));
     }
 
     if (mounted) {

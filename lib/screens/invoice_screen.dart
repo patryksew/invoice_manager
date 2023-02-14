@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
+import 'package:invoice_manager/screens/list_screen.dart';
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -62,6 +63,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     if (formKey.currentState == null) return;
     FormState formState = formKey.currentState!;
     if (!formState.validate()) return;
+    formState.save();
     setState(() {
       isLoading = true;
     });
@@ -82,17 +84,19 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/${doc.id}.${attachment!.extension}");
 
     await ref.putFile(File(attachment!.path!));
+    clearForm();
+  }
 
-    setState(() {
-      isLoading = false;
-      invoiceNo.clear();
-      contractorName.clear();
-      netVal.clear();
-      grossVal.clear();
-      attachmentName.clear();
-      attachment = null;
-    });
-    formState.reset();
+  void clearForm() {
+    print("DUPA");
+    isLoading = false;
+    formKey.currentState!.reset();
+    invoiceNo.clear();
+    contractorName.clear();
+    netVal.clear();
+    grossVal.clear();
+    attachmentName.clear();
+    attachment = null;
   }
 
   @override
@@ -100,7 +104,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Manager faktur"),
-        leading: IconButton(onPressed: () {}, icon: const Icon(Icons.list)),
+        leading: IconButton(
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ListScreen()));
+            },
+            icon: const Icon(Icons.list)),
         actions: [
           IconButton(onPressed: isLoading ? null : submit, icon: const Icon(Icons.save)),
         ],
@@ -124,7 +132,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     if (val == null || val.isEmpty) return "To pole nie może być puste";
                     return null;
                   },
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: invoiceNo,
                 ),
                 const SizedBox(height: 12),
@@ -135,7 +142,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     if (val == null || val.isEmpty) return "To pole nie może być puste";
                     return null;
                   },
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: contractorName,
                 ),
                 const SizedBox(height: 12),
@@ -148,7 +154,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     if (num == null || num <= 0) return "Kwota netto musi być większa od 0";
                     return null;
                   },
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: netVal,
                   keyboardType: TextInputType.number,
                   inputFormatters: amountFormatters,
@@ -166,7 +171,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     if (val == null) return "Wybierz stawkę VAT";
                     return null;
                   },
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   onChanged: (val) {
                     if (val == null) return;
                     vat = val;
@@ -185,7 +189,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     if (num == null || num <= 0) return "Kwota brutto musi być większa od 0";
                     return null;
                   },
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: grossVal,
                   keyboardType: TextInputType.number,
                   inputFormatters: amountFormatters,
@@ -205,7 +208,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     ),
                   ),
                   controller: attachmentName,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (value) {
                     if (value == null || value.isEmpty || attachment == null) return "Dodaj załącznik";
                     return null;
