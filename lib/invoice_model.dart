@@ -5,10 +5,11 @@ class InvoiceModel {
   double grossVal;
   String attachmentName;
   int vat;
+  String? id;
 
   InvoiceModel(this.invoiceNo, this.contractorName, this.netVal, this.grossVal, this.attachmentName, this.vat);
 
-  InvoiceModel.parse(Map<String, dynamic> map)
+  InvoiceModel.parse(Map<String, dynamic> map, {this.id})
       : invoiceNo = map["invoiceNo"],
         contractorName = map["contractorName"],
         netVal = map["netVal"],

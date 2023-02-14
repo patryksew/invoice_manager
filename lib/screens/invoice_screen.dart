@@ -7,12 +7,15 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
+import 'package:invoice_manager/screens/auth_screen.dart';
 import 'package:invoice_manager/screens/list_screen.dart';
 
 class InvoiceScreen extends StatefulWidget {
-  const InvoiceScreen({super.key});
+  final InvoiceModel? data;
 
-  InvoiceScreen.edit({super.key}) {}
+  const InvoiceScreen({super.key}) : data = null;
+
+  const InvoiceScreen.edit(this.data, {super.key});
 
   @override
   State<InvoiceScreen> createState() => _InvoiceScreenState();
@@ -27,7 +30,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   TextEditingController attachmentName = TextEditingController();
   bool isLoading = false;
   PlatformFile? attachment;
-  int vat = 0;
+  int? vat;
+  late final String appBarTitle;
+  late final bool isEditMode;
+  late final String? documentId;
+  late final String? oldAttachmentExtension;
 
   InputDecoration decoration = InputDecoration(
     filled: true,
@@ -74,23 +81,39 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final grossNum = double.parse(grossVal.text);
 
     final Map<String, dynamic> data =
-        InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat).toMap();
+        InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat!).toMap();
 
     final authInstance = FirebaseAuth.instance;
-    final doc = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").add(data);
-
     final storageInstance = FirebaseStorage.instance;
-    final ref =
-        storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/${doc.id}.${attachment!.extension}");
 
-    await ref.putFile(File(attachment!.path!));
+    if (isEditMode && attachment != null) {
+      await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices/").doc(documentId).set(data);
+
+      final deleteRef =
+          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId$oldAttachmentExtension");
+      await deleteRef.delete();
+
+      final uploadRef =
+          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId.${attachment!.extension}");
+      await uploadRef.putFile(File(attachment!.path!));
+    } else if (attachment != null) {
+      final doc = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").add(data);
+
+      final ref =
+          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/${doc.id}.${attachment!.extension}");
+      await ref.putFile(File(attachment!.path!));
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+
     clearForm();
   }
 
   void clearForm() {
-    print("DUPA");
     isLoading = false;
-    formKey.currentState!.reset();
+    vat = null;
     invoiceNo.clear();
     contractorName.clear();
     netVal.clear();
@@ -100,16 +123,51 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   }
 
   @override
+  void initState() {
+    if (widget.data == null) {
+      appBarTitle = "Dodaj nową fakturę";
+      isEditMode = false;
+      super.initState();
+      return;
+    }
+
+    appBarTitle = "Edytuj fakturę";
+    isEditMode = true;
+    final data = widget.data!;
+
+    invoiceNo.text = data.invoiceNo;
+    contractorName.text = data.contractorName;
+    netVal.text = data.netVal.toString();
+    grossVal.text = data.grossVal.toString();
+    attachmentName.text = data.attachmentName;
+    attachment = null;
+    setState(() {
+      vat = data.vat;
+    });
+    documentId = data.id;
+    oldAttachmentExtension = data.attachmentName.substring(data.attachmentName.lastIndexOf("."));
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Manager faktur"),
-        leading: IconButton(
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ListScreen()));
-            },
-            icon: const Icon(Icons.list)),
+        title: Text(appBarTitle),
+        leading: isEditMode
+            ? null
+            : IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ListScreen()));
+                },
+                icon: const Icon(Icons.list)),
         actions: [
+          IconButton(
+              onPressed: () {
+                FirebaseAuth.instance.signOut();
+                Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
+              },
+              icon: const Icon(Icons.logout)),
           IconButton(onPressed: isLoading ? null : submit, icon: const Icon(Icons.save)),
         ],
       ),
@@ -120,11 +178,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             margin: const EdgeInsets.all(12),
             child: Column(
               children: [
-                Text(
-                  "Dodaj nową fakturę",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 12),
                 TextFormField(
                   decoration: decoration.copyWith(labelText: "Nr faktury *"),
                   validator: (val) {
@@ -161,6 +214,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField(
                   decoration: decoration.copyWith(labelText: "Stawka VAT *"),
+                  value: vat,
                   items: [0, 7, 23]
                       .map((e) => DropdownMenuItem(
                             value: e,
@@ -209,7 +263,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   ),
                   controller: attachmentName,
                   validator: (value) {
-                    if (value == null || value.isEmpty || attachment == null) return "Dodaj załącznik";
+                    if (value == null || value.isEmpty || (attachment == null && !isEditMode)) return "Dodaj załącznik";
                     return null;
                   },
                   readOnly: true,

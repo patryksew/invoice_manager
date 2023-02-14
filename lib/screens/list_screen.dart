@@ -16,13 +16,17 @@ class _ListScreenState extends State<ListScreen> {
   List<InvoiceModel> data = [];
 
   Future<void> getData() async {
+    setState(() {
+      isLoading = true;
+    });
+    data = [];
     final authInstance = FirebaseAuth.instance;
     final firestoreInstance = FirebaseFirestore.instance;
 
     final response = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").get();
     final docs = response.docs;
     for (final doc in docs) {
-      data.add(InvoiceModel.parse(doc.data()));
+      data.add(InvoiceModel.parse(doc.data(), id: doc.id));
     }
     setState(() {
       isLoading = false;
@@ -38,15 +42,20 @@ class _ListScreenState extends State<ListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Lista faktur")),
+      appBar: AppBar(
+        title: const Text("Lista faktur"),
+        actions: [IconButton(onPressed: getData, icon: const Icon(Icons.refresh))],
+      ),
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: data.length,
-                itemBuilder: ((context, index) {
-                  return InvoiceCard(data[index]);
-                })),
+            : data.isEmpty
+                ? const Center(child: Text("Nie ma żadnych zapisanych faktur"))
+                : ListView.builder(
+                    itemCount: data.length,
+                    itemBuilder: ((context, index) {
+                      return InvoiceCard(data[index], getData);
+                    })),
       ),
     );
   }
