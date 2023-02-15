@@ -12,10 +12,13 @@ import 'package:invoice_manager/screens/list_screen.dart';
 
 class InvoiceScreen extends StatefulWidget {
   final InvoiceModel? data;
+  final VoidCallback? refreshFn;
 
-  const InvoiceScreen({super.key}) : data = null;
+  const InvoiceScreen({super.key})
+      : data = null,
+        refreshFn = null;
 
-  const InvoiceScreen.edit(this.data, {super.key});
+  const InvoiceScreen.edit(this.data, this.refreshFn, {super.key});
 
   @override
   State<InvoiceScreen> createState() => _InvoiceScreenState();
@@ -86,17 +89,21 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final authInstance = FirebaseAuth.instance;
     final storageInstance = FirebaseStorage.instance;
 
-    if (isEditMode && attachment != null) {
+    if (isEditMode) {
       await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices/").doc(documentId).set(data);
 
-      final deleteRef =
-          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId$oldAttachmentExtension");
-      await deleteRef.delete();
+      if (attachment != null) {
+        final deleteRef =
+            storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId$oldAttachmentExtension");
+        await deleteRef.delete();
 
-      final uploadRef =
-          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId.${attachment!.extension}");
-      await uploadRef.putFile(File(attachment!.path!));
-    } else if (attachment != null) {
+        final uploadRef =
+            storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId.${attachment!.extension}");
+        await uploadRef.putFile(File(attachment!.path!));
+      }
+
+      widget.refreshFn!();
+    } else {
       final doc = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").add(data);
 
       final ref =

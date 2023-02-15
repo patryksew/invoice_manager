@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class InvoiceCard extends StatelessWidget {
   final InvoiceModel data;
-  final refreshFn;
+  final VoidCallback refreshFn;
 
   const InvoiceCard(this.data, this.refreshFn, {super.key});
 
@@ -22,7 +22,7 @@ class InvoiceCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Numer faktury: ${data.invoiceNo}"),
-            Text("Nazwa kontrahenta${data.contractorName}"),
+            Text("Nazwa kontrahenta: ${data.contractorName}"),
             Text("Stawka VAT: ${data.vat}%"),
             Text("Kwota netto: ${data.netVal}"),
             Text("Kwota brutto: ${data.grossVal}"),
@@ -44,7 +44,8 @@ class InvoiceCard extends StatelessWidget {
                     child: const Text("Pobierz załącznik")),
                 TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => InvoiceScreen.edit(data)));
+                      Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (_) => InvoiceScreen.edit(data, refreshFn)));
                     },
                     child: const Text("Edytuj")),
                 TextButton(
