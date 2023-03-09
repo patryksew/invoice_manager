@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_manager/screens/invoice_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -16,6 +17,8 @@ class _AuthScreenState extends State<AuthScreen> {
   bool isLoginMode = true;
   String email = '';
   String password = '';
+
+  late AppLocalizations appLocalizations;
 
   void submit() async {
     final authInstance = FirebaseAuth.instance;
@@ -59,6 +62,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    appLocalizations = AppLocalizations.of(context);
+
     return Scaffold(
       body: Center(
         child: Card(
@@ -74,10 +79,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     TextFormField(
                       key: const ValueKey('email'),
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'Adres email'),
+                      decoration: InputDecoration(labelText: appLocalizations.emailAddress),
                       validator: (val) {
                         if (val == null || val.isEmpty || !val.contains('@')) {
-                          return 'Wprowadź poprawny adres email';
+                          return appLocalizations.enterValidEmail;
                         }
                         return null;
                       },
@@ -89,10 +94,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     TextFormField(
                       key: const ValueKey('password'),
                       obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Hasło'),
+                      decoration: InputDecoration(labelText: appLocalizations.password),
                       validator: (val) {
                         if (val == null || val.length < 7) {
-                          return 'Hasło powinno mieć conajmniej 7 znaków';
+                          return appLocalizations.passwordAtLeast7Chars;
                         }
                         return null;
                       },
@@ -105,16 +110,23 @@ class _AuthScreenState extends State<AuthScreen> {
                     if (!isLoading)
                       ElevatedButton(
                         onPressed: () => submit(),
-                        child: Text(isLoginMode ? 'Zaloguj się' : 'Zarejestruj się'),
+                        child: Text(isLoginMode ? appLocalizations.signIn : appLocalizations.signUp),
                       ),
                     if (!isLoading)
                       TextButton(
-                          onPressed: () {
-                            setState(() {
-                              isLoginMode = !isLoginMode;
-                            });
-                          },
-                          child: Text(isLoginMode ? 'Utwórz nowe konto' : 'Już mam konto'))
+                        onPressed: () {
+                          setState(() {
+                            isLoginMode = !isLoginMode;
+                          });
+                        },
+                        child: Text(
+                            isLoginMode ? appLocalizations.createNewAccount : appLocalizations.iAlreadyHaveAccount),
+                      ),
+                    if (isWrongPassword && !isLoading)
+                      TextButton(
+                        onPressed: () => resetPassword(),
+                        child: Text(appLocalizations.forgotPassword),
+                      )
                   ],
                 ),
               ),

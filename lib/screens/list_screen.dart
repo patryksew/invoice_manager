@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_manager/invoice_model.dart';
 import 'package:invoice_manager/widgets/invoice_card.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -14,6 +15,7 @@ class ListScreen extends StatefulWidget {
 class _ListScreenState extends State<ListScreen> {
   bool isLoading = true;
   List<InvoiceModel> data = [];
+  late AppLocalizations appLocalizations;
 
   Future<void> getData() async {
     setState(() {
@@ -41,16 +43,18 @@ class _ListScreenState extends State<ListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    appLocalizations = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Lista faktur"),
+        title: Text(appLocalizations.invoiceList),
         actions: [IconButton(onPressed: getData, icon: const Icon(Icons.refresh))],
       ),
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : data.isEmpty
-                ? const Center(child: Text("Nie ma żadnych zapisanych faktur"))
+                ? Center(child: Text(appLocalizations.noInvoicesSaved))
                 : ListView.builder(
                     itemCount: data.length,
                     itemBuilder: ((context, index) {

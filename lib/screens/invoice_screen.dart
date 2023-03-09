@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
 import 'package:invoice_manager/screens/auth_screen.dart';
 import 'package:invoice_manager/screens/list_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class InvoiceScreen extends StatefulWidget {
   final InvoiceModel? data;
@@ -34,10 +35,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   bool isLoading = false;
   PlatformFile? attachment;
   int? vat;
-  late final String appBarTitle;
   late final bool isEditMode;
   late final String? documentId;
   late final String? oldAttachmentExtension;
+  late AppLocalizations appLocalizations;
 
   InputDecoration decoration = InputDecoration(
     filled: true,
@@ -132,13 +133,13 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   void initState() {
     if (widget.data == null) {
-      appBarTitle = "Dodaj nową fakturę";
+      // appBarTitle = appLocalizations.addNewInvoice;
       isEditMode = false;
       super.initState();
       return;
     }
 
-    appBarTitle = "Edytuj fakturę";
+    // appBarTitle = appLocalizations.editInvoice;
     isEditMode = true;
     final data = widget.data!;
 
@@ -158,9 +159,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    appLocalizations = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle),
+        title: Text(isEditMode ? appLocalizations.editInvoice : appLocalizations.addNewInvoice),
         leading: isEditMode
             ? null
             : IconButton(
@@ -186,32 +189,32 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             child: Column(
               children: [
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Nr faktury *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.invoiceNo} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     return null;
                   },
                   controller: invoiceNo,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Nazwa kontrahenta *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.contractorName} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     return null;
                   },
                   controller: contractorName,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Kwota netto *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.netAmount} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     double? num = double.tryParse(val);
-                    if (num == null || num <= 0) return "Kwota netto musi być większa od 0";
+                    if (num == null || num <= 0) return appLocalizations.netAmountMustBeBiggerThan0;
                     return null;
                   },
                   controller: netVal,
@@ -220,7 +223,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField(
-                  decoration: decoration.copyWith(labelText: "Stawka VAT *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.vatRate} *"),
                   value: vat,
                   items: [0, 7, 23]
                       .map((e) => DropdownMenuItem(
@@ -229,7 +232,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                           ))
                       .toList(),
                   validator: (val) {
-                    if (val == null) return "Wybierz stawkę VAT";
+                    if (val == null) return appLocalizations.selectVatRate;
                     return null;
                   },
                   onChanged: (val) {
@@ -242,12 +245,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Kwota brutto *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.grossAmount} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     double? num = double.tryParse(val);
-                    if (num == null || num <= 0) return "Kwota brutto musi być większa od 0";
+                    if (num == null || num <= 0) return appLocalizations.grossAmountMustBeBiggerThan0;
                     return null;
                   },
                   controller: grossVal,
@@ -257,7 +260,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   decoration: decoration.copyWith(
-                    labelText: "Załącznik *",
+                    labelText: "${appLocalizations.attachment} *",
                     prefixIcon: IconButton(
                       onPressed: () async {
                         FilePickerResult? result = await FilePicker.platform.pickFiles();
@@ -270,7 +273,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   ),
                   controller: attachmentName,
                   validator: (value) {
-                    if (value == null || value.isEmpty || (attachment == null && !isEditMode)) return "Dodaj załącznik";
+                    if (value == null || value.isEmpty || (attachment == null && !isEditMode)) {
+                      return appLocalizations.addAttachment;
+                    }
                     return null;
                   },
                   readOnly: true,
