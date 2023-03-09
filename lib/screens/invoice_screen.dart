@@ -7,19 +7,18 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
+import 'package:invoice_manager/providers/invoices_provider.dart';
 import 'package:invoice_manager/screens/auth_screen.dart';
 import 'package:invoice_manager/screens/list_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class InvoiceScreen extends StatefulWidget {
   final InvoiceModel? data;
-  final VoidCallback? refreshFn;
 
-  const InvoiceScreen({super.key})
-      : data = null,
-        refreshFn = null;
+  const InvoiceScreen({super.key}) : data = null;
 
-  const InvoiceScreen.edit(this.data, this.refreshFn, {super.key});
+  const InvoiceScreen.edit(this.data, {super.key});
 
   @override
   State<InvoiceScreen> createState() => _InvoiceScreenState();
@@ -79,6 +78,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       isLoading = true;
     });
 
+    final invoicesProvider = Provider.of<InvoicesProvider>(context, listen: false);
+
     final firestoreInstance = FirebaseFirestore.instance;
 
     final netNum = double.parse(netVal.text);
@@ -103,7 +104,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         await uploadRef.putFile(File(attachment!.path!));
       }
 
-      widget.refreshFn!();
+      invoicesProvider.refresh();
     } else {
       final doc = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").add(data);
 

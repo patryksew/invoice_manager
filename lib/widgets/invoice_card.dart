@@ -1,17 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_manager/invoice_model.dart';
+import 'package:invoice_manager/providers/invoices_provider.dart';
 import 'package:invoice_manager/screens/invoice_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class InvoiceCard extends StatelessWidget {
   final InvoiceModel data;
-  final VoidCallback refreshFn;
 
-  const InvoiceCard(this.data, this.refreshFn, {super.key});
+  const InvoiceCard(this.data, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +47,7 @@ class InvoiceCard extends StatelessWidget {
                     child: Text(appLocalizations.downloadAttachment)),
                 TextButton(
                     onPressed: () {
-                      Navigator.of(context)
-                          .push(MaterialPageRoute(builder: (_) => InvoiceScreen.edit(data, refreshFn)));
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => InvoiceScreen.edit(data)));
                     },
                     child: Text(appLocalizations.edit)),
                 TextButton(
@@ -62,21 +61,9 @@ class InvoiceCard extends StatelessWidget {
                               actions: [
                                 TextButton(
                                     onPressed: () async {
-                                      final storageInstance = FirebaseStorage.instance;
-                                      final authInstance = FirebaseAuth.instance;
-                                      final firestoreInstance = FirebaseFirestore.instance;
-                                      final fileExtension =
-                                          data.attachmentName.substring(data.attachmentName.lastIndexOf("."));
-                                      storageInstance
-                                          .ref(
-                                              "users/${authInstance.currentUser!.uid}/invoices/${data.id}$fileExtension")
-                                          .delete();
-                                      firestoreInstance
-                                          .collection("users/${authInstance.currentUser!.uid}/invoices/")
-                                          .doc(data.id)
-                                          .delete();
-                                      refreshFn();
                                       Navigator.of(context).pop();
+
+                                      Provider.of<InvoicesProvider>(context, listen: false).removeInvoice(data);
                                     },
                                     child: Text(appLocalizations.yes)),
                                 TextButton(

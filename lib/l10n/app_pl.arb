@@ -3,6 +3,7 @@
     "emailAlreadyInUse": "Konto z tym adresem email już istnieje. Zaloguj się",
     "invalidEmail": "Wprowadzono niepoprawny email. Sprawdź pisownię",
     "userNotFound": "Nie znaleziono użytkownika z tym adresem email. Utwórz nowe konto",
+    "networkRequestFailed": "Brak połączenia z internetem",
     "unexpectedError": "Wystąpił błąd: {code}. Skontaktuj się ze mną na: patryk.sewastianowicz@gmail.com",
     "invoiceManager": "Manager faktur",
     "passwordResetLinkSent": "Wiadomość z linkiem do resetu hasła została wysłana na adres: ",

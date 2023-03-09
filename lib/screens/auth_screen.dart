@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_manager/repositories/auth_repository.dart';
 import 'package:invoice_manager/screens/invoice_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -13,7 +12,9 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool isLoading = false;
+  bool isWrongPassword = false;
   final formKey = GlobalKey<FormState>();
+  final emailFieldKey = GlobalKey<FormFieldState>();
   bool isLoginMode = true;
   String email = '';
   String password = '';
@@ -21,7 +22,6 @@ class _AuthScreenState extends State<AuthScreen> {
   late AppLocalizations appLocalizations;
 
   void submit() async {
-    final authInstance = FirebaseAuth.instance;
     if (formKey.currentState == null) return;
     final FormState formState = formKey.currentState!;
     if (!formState.validate()) return;
@@ -34,20 +34,26 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (isLoginMode) {
-        await authInstance.signInWithEmailAndPassword(email: email, password: password);
+        await AuthRepository.signIn(
+          email: email,
+          password: password,
+          appLocalizations: AppLocalizations.of(context),
+        );
       } else {
-        await authInstance.createUserWithEmailAndPassword(email: email, password: password);
-        if (authInstance.currentUser != null) {
-          await FirebaseFirestore.instance.collection("users").doc(authInstance.currentUser!.uid).set({});
-        }
+        await AuthRepository.signUp(
+          email: email,
+          password: password,
+          appLocalizations: appLocalizations,
+        );
       }
       navigator.pushReplacement(MaterialPageRoute(builder: (_) => const InvoiceScreen()));
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
+      if (e.code == "wrong-password") {
+        isWrongPassword = true;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            e.message ?? 'Error',
-          ),
+          content: Text(e.message),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -58,6 +64,40 @@ class _AuthScreenState extends State<AuthScreen> {
         isLoading = false;
       });
     }
+  }
+
+  void resetPassword() async {
+    if (emailFieldKey.currentState == null) return;
+    final FormFieldState emailFieldState = emailFieldKey.currentState!;
+    if (!emailFieldState.validate()) return;
+    emailFieldState.save();
+
+    setState(() {
+      isLoading = true;
+    });
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      await AuthRepository.resetPassword(email: email, appLocalizations: appLocalizations);
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(appLocalizations.passwordResetLinkSent(email)),
+        ),
+      );
+    } on AuthException catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            e.message,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+
+    setState(() {
+      isLoading = false;
+    });
   }
 
   @override
@@ -77,7 +117,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
-                      key: const ValueKey('email'),
+                      key: emailFieldKey,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(labelText: appLocalizations.emailAddress),
                       validator: (val) {
@@ -92,7 +132,6 @@ class _AuthScreenState extends State<AuthScreen> {
                       textInputAction: TextInputAction.next,
                     ),
                     TextFormField(
-                      key: const ValueKey('password'),
                       obscureText: true,
                       decoration: InputDecoration(labelText: appLocalizations.password),
                       validator: (val) {

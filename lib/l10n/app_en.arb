@@ -3,6 +3,7 @@
     "emailAlreadyInUse": "There is already an account associated with this email. Sign in instead",
     "invalidEmail": "Invalid email has been entered. Check your spelling",
     "userNotFound": "There is no account associated with this email. Sign up instead",
+    "networkRequestFailed": "Internet connection unavailable",
     "unexpectedError": "Unexpected error occured: {code}. Contact me at: patryk.sewastianowicz@gmail.com",
     "invoiceManager": "Invoice manager",
     "passwordResetLinkSent": "Password reset link has been sent to: {email}",
