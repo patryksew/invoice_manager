@@ -1,8 +1,8 @@
 class InvoiceModel {
   String invoiceNo;
   String contractorName;
-  double netVal;
-  double grossVal;
+  num netVal;
+  num grossVal;
   String attachmentName;
   int vat;
   String? id;

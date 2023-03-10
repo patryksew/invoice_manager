@@ -82,8 +82,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
     final firestoreInstance = FirebaseFirestore.instance;
 
-    final netNum = double.parse(netVal.text);
-    final grossNum = double.parse(grossVal.text);
+    final netNum = num.parse(netVal.text);
+    final grossNum = num.parse(grossVal.text);
 
     final Map<String, dynamic> data =
         InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat!).toMap();
