@@ -38,5 +38,6 @@
     "grossAmountMustBeBiggerThan0": "Kwota brutto musi być większa od 0",
     "addAttachment": "Dodaj załącznik",
     "addNewInvoice": "Dodaj nową fakturę",
-    "editInvoice": "Edytuj fakturę"
+    "editInvoice": "Edytuj fakturę",
+    "dontLogOut": "Nie wylogowuj mnie"
 }

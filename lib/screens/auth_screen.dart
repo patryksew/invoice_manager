@@ -37,7 +37,7 @@ class _AuthScreenState extends State<AuthScreen> {
         await AuthRepository.signIn(
           email: email,
           password: password,
-          appLocalizations: AppLocalizations.of(context),
+          appLocalizations: appLocalizations,
         );
       } else {
         await AuthRepository.signUp(

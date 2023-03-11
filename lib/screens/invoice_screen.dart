@@ -1,13 +1,10 @@
-import 'dart:io';
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
 import 'package:invoice_manager/providers/invoices_provider.dart';
+import 'package:invoice_manager/repositories/auth_repository.dart';
 import 'package:invoice_manager/screens/auth_screen.dart';
 import 'package:invoice_manager/screens/list_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -78,39 +75,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       isLoading = true;
     });
 
-    final invoicesProvider = Provider.of<InvoicesProvider>(context, listen: false);
-
-    final firestoreInstance = FirebaseFirestore.instance;
-
     final netNum = num.parse(netVal.text);
     final grossNum = num.parse(grossVal.text);
 
-    final Map<String, dynamic> data =
-        InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat!).toMap();
+    final data = InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat!);
 
-    final authInstance = FirebaseAuth.instance;
-    final storageInstance = FirebaseStorage.instance;
+    final invoicesProvider = Provider.of<InvoicesProvider>(context, listen: false);
 
     if (isEditMode) {
-      await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices/").doc(documentId).set(data);
-
-      if (attachment != null) {
-        final deleteRef =
-            storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId$oldAttachmentExtension");
-        await deleteRef.delete();
-
-        final uploadRef =
-            storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId.${attachment!.extension}");
-        await uploadRef.putFile(File(attachment!.path!));
-      }
-
-      invoicesProvider.refresh();
+      data.id = documentId;
+      await invoicesProvider.updateInvoice(data, attachment, oldAttachmentExtension!);
     } else {
-      final doc = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").add(data);
-
-      final ref =
-          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/${doc.id}.${attachment!.extension}");
-      await ref.putFile(File(attachment!.path!));
+      await invoicesProvider.createInvoice(data, attachment!);
     }
 
     setState(() {
@@ -134,13 +110,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   void initState() {
     if (widget.data == null) {
-      // appBarTitle = appLocalizations.addNewInvoice;
       isEditMode = false;
       super.initState();
       return;
     }
 
-    // appBarTitle = appLocalizations.editInvoice;
     isEditMode = true;
     final data = widget.data!;
 
@@ -174,9 +148,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 icon: const Icon(Icons.list)),
         actions: [
           IconButton(
-              onPressed: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                await AuthRepository.signOut();
+                navigator.pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
               },
               icon: const Icon(Icons.logout)),
           IconButton(onPressed: isLoading ? null : submit, icon: const Icon(Icons.save)),

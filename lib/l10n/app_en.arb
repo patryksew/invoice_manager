@@ -38,5 +38,6 @@
     "grossAmountMustBeBiggerThan0": "Gross value must be bigger than 0",
     "addAttachment": "Add attachment",
     "addNewInvoice": "Add new invoice",
-    "editInvoice": "Edit invoice"
+    "editInvoice": "Edit invoice",
+    "dontLogOut": "Don't log out"
 }

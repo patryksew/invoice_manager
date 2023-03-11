@@ -1,11 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:invoice_manager/invoice_model.dart';
 import 'package:invoice_manager/providers/invoices_provider.dart';
 import 'package:invoice_manager/screens/invoice_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class InvoiceCard extends StatelessWidget {
@@ -35,14 +32,7 @@ class InvoiceCard extends StatelessWidget {
               children: [
                 TextButton(
                     onPressed: () {
-                      final storageInstance = FirebaseStorage.instance;
-                      final authInstance = FirebaseAuth.instance;
-                      final fileExtension = data.attachmentName.substring(data.attachmentName.lastIndexOf("."));
-                      final ref = storageInstance
-                          .ref("users/${authInstance.currentUser!.uid}/invoices/${data.id}$fileExtension");
-                      ref
-                          .getDownloadURL()
-                          .then((value) => launchUrl(Uri.parse(value), mode: LaunchMode.externalApplication));
+                      Provider.of<InvoicesProvider>(context, listen: false).openAttachment(data);
                     },
                     child: Text(appLocalizations.downloadAttachment)),
                 TextButton(
@@ -63,7 +53,7 @@ class InvoiceCard extends StatelessWidget {
                                     onPressed: () async {
                                       Navigator.of(context).pop();
 
-                                      Provider.of<InvoicesProvider>(context, listen: false).removeInvoice(data);
+                                      Provider.of<InvoicesProvider>(context, listen: false).deleteInvoice(data);
                                     },
                                     child: Text(appLocalizations.yes)),
                                 TextButton(

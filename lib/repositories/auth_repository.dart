@@ -10,13 +10,17 @@ class AuthException implements Exception {
 }
 
 class AuthRepository {
+  static bool get isUserLoggedIn => FirebaseAuth.instance.currentUser != null;
+
   static Future<void> signIn({
     required String email,
     required String password,
     required AppLocalizations appLocalizations,
   }) async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      final authInstance = FirebaseAuth.instance;
+
+      await authInstance.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
       throw AuthException(
         message: translateErrorMessage(code: e.code, appLocalizations: appLocalizations),
@@ -32,6 +36,7 @@ class AuthRepository {
   }) async {
     try {
       final authInstance = FirebaseAuth.instance;
+
       await authInstance.createUserWithEmailAndPassword(email: email, password: password);
       if (authInstance.currentUser != null) {
         await FirebaseFirestore.instance.collection("users").doc(authInstance.currentUser!.uid).set({});
@@ -53,6 +58,10 @@ class AuthRepository {
         code: e.code,
       );
     }
+  }
+
+  static Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
   }
 
   static String translateErrorMessage({required String code, required AppLocalizations appLocalizations}) {
