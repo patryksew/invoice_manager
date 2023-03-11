@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:invoice_manager/repositories/auth_repository.dart';
 import 'package:invoice_manager/screens/invoice_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -12,13 +12,16 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool isLoading = false;
+  bool isWrongPassword = false;
   final formKey = GlobalKey<FormState>();
+  final emailFieldKey = GlobalKey<FormFieldState>();
   bool isLoginMode = true;
   String email = '';
   String password = '';
 
+  late AppLocalizations appLocalizations;
+
   void submit() async {
-    final authInstance = FirebaseAuth.instance;
     if (formKey.currentState == null) return;
     final FormState formState = formKey.currentState!;
     if (!formState.validate()) return;
@@ -31,20 +34,26 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (isLoginMode) {
-        await authInstance.signInWithEmailAndPassword(email: email, password: password);
+        await AuthRepository.signIn(
+          email: email,
+          password: password,
+          appLocalizations: appLocalizations,
+        );
       } else {
-        await authInstance.createUserWithEmailAndPassword(email: email, password: password);
-        if (authInstance.currentUser != null) {
-          await FirebaseFirestore.instance.collection("users").doc(authInstance.currentUser!.uid).set({});
-        }
+        await AuthRepository.signUp(
+          email: email,
+          password: password,
+          appLocalizations: appLocalizations,
+        );
       }
       navigator.pushReplacement(MaterialPageRoute(builder: (_) => const InvoiceScreen()));
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
+      if (e.code == "wrong-password") {
+        isWrongPassword = true;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            e.message ?? 'Error',
-          ),
+          content: Text(e.message),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -57,8 +66,44 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  void resetPassword() async {
+    if (emailFieldKey.currentState == null) return;
+    final FormFieldState emailFieldState = emailFieldKey.currentState!;
+    if (!emailFieldState.validate()) return;
+    emailFieldState.save();
+
+    setState(() {
+      isLoading = true;
+    });
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      await AuthRepository.resetPassword(email: email, appLocalizations: appLocalizations);
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(appLocalizations.passwordResetLinkSent(email)),
+        ),
+      );
+    } on AuthException catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            e.message,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    appLocalizations = AppLocalizations.of(context);
+
     return Scaffold(
       body: Center(
         child: Card(
@@ -72,12 +117,12 @@ class _AuthScreenState extends State<AuthScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
-                      key: const ValueKey('email'),
+                      key: emailFieldKey,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(labelText: 'Adres email'),
+                      decoration: InputDecoration(labelText: appLocalizations.emailAddress),
                       validator: (val) {
                         if (val == null || val.isEmpty || !val.contains('@')) {
-                          return 'Wprowadź poprawny adres email';
+                          return appLocalizations.enterValidEmail;
                         }
                         return null;
                       },
@@ -87,12 +132,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       textInputAction: TextInputAction.next,
                     ),
                     TextFormField(
-                      key: const ValueKey('password'),
                       obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Hasło'),
+                      decoration: InputDecoration(labelText: appLocalizations.password),
                       validator: (val) {
                         if (val == null || val.length < 7) {
-                          return 'Hasło powinno mieć conajmniej 7 znaków';
+                          return appLocalizations.passwordAtLeast7Chars;
                         }
                         return null;
                       },
@@ -105,16 +149,23 @@ class _AuthScreenState extends State<AuthScreen> {
                     if (!isLoading)
                       ElevatedButton(
                         onPressed: () => submit(),
-                        child: Text(isLoginMode ? 'Zaloguj się' : 'Zarejestruj się'),
+                        child: Text(isLoginMode ? appLocalizations.signIn : appLocalizations.signUp),
                       ),
                     if (!isLoading)
                       TextButton(
-                          onPressed: () {
-                            setState(() {
-                              isLoginMode = !isLoginMode;
-                            });
-                          },
-                          child: Text(isLoginMode ? 'Utwórz nowe konto' : 'Już mam konto'))
+                        onPressed: () {
+                          setState(() {
+                            isLoginMode = !isLoginMode;
+                          });
+                        },
+                        child: Text(
+                            isLoginMode ? appLocalizations.createNewAccount : appLocalizations.iAlreadyHaveAccount),
+                      ),
+                    if (isWrongPassword && !isLoading)
+                      TextButton(
+                        onPressed: () => resetPassword(),
+                        child: Text(appLocalizations.forgotPassword),
+                      )
                   ],
                 ),
               ),

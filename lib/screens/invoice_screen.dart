@@ -1,24 +1,21 @@
-import 'dart:io';
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
+import 'package:invoice_manager/providers/invoices_provider.dart';
+import 'package:invoice_manager/repositories/auth_repository.dart';
 import 'package:invoice_manager/screens/auth_screen.dart';
 import 'package:invoice_manager/screens/list_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class InvoiceScreen extends StatefulWidget {
   final InvoiceModel? data;
-  final VoidCallback? refreshFn;
 
-  const InvoiceScreen({super.key})
-      : data = null,
-        refreshFn = null;
+  const InvoiceScreen({super.key}) : data = null;
 
-  const InvoiceScreen.edit(this.data, this.refreshFn, {super.key});
+  const InvoiceScreen.edit(this.data, {super.key});
 
   @override
   State<InvoiceScreen> createState() => _InvoiceScreenState();
@@ -34,10 +31,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   bool isLoading = false;
   PlatformFile? attachment;
   int? vat;
-  late final String appBarTitle;
   late final bool isEditMode;
   late final String? documentId;
   late final String? oldAttachmentExtension;
+  late AppLocalizations appLocalizations;
 
   InputDecoration decoration = InputDecoration(
     filled: true,
@@ -78,37 +75,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       isLoading = true;
     });
 
-    final firestoreInstance = FirebaseFirestore.instance;
+    final netNum = num.parse(netVal.text);
+    final grossNum = num.parse(grossVal.text);
 
-    final netNum = double.parse(netVal.text);
-    final grossNum = double.parse(grossVal.text);
+    final data = InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat!);
 
-    final Map<String, dynamic> data =
-        InvoiceModel(invoiceNo.text, contractorName.text, netNum, grossNum, attachmentName.text, vat!).toMap();
-
-    final authInstance = FirebaseAuth.instance;
-    final storageInstance = FirebaseStorage.instance;
+    final invoicesProvider = Provider.of<InvoicesProvider>(context, listen: false);
 
     if (isEditMode) {
-      await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices/").doc(documentId).set(data);
-
-      if (attachment != null) {
-        final deleteRef =
-            storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId$oldAttachmentExtension");
-        await deleteRef.delete();
-
-        final uploadRef =
-            storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/$documentId.${attachment!.extension}");
-        await uploadRef.putFile(File(attachment!.path!));
-      }
-
-      widget.refreshFn!();
+      data.id = documentId;
+      await invoicesProvider.updateInvoice(data, attachment, oldAttachmentExtension!);
     } else {
-      final doc = await firestoreInstance.collection("users/${authInstance.currentUser!.uid}/invoices").add(data);
-
-      final ref =
-          storageInstance.ref("users/${authInstance.currentUser!.uid}/invoices/${doc.id}.${attachment!.extension}");
-      await ref.putFile(File(attachment!.path!));
+      await invoicesProvider.createInvoice(data, attachment!);
     }
 
     setState(() {
@@ -132,13 +110,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   void initState() {
     if (widget.data == null) {
-      appBarTitle = "Dodaj nową fakturę";
       isEditMode = false;
       super.initState();
       return;
     }
 
-    appBarTitle = "Edytuj fakturę";
     isEditMode = true;
     final data = widget.data!;
 
@@ -158,9 +134,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    appLocalizations = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle),
+        title: Text(isEditMode ? appLocalizations.editInvoice : appLocalizations.addNewInvoice),
         leading: isEditMode
             ? null
             : IconButton(
@@ -170,9 +148,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 icon: const Icon(Icons.list)),
         actions: [
           IconButton(
-              onPressed: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                await AuthRepository.signOut();
+                navigator.pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
               },
               icon: const Icon(Icons.logout)),
           IconButton(onPressed: isLoading ? null : submit, icon: const Icon(Icons.save)),
@@ -186,32 +165,32 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             child: Column(
               children: [
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Nr faktury *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.invoiceNo} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     return null;
                   },
                   controller: invoiceNo,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Nazwa kontrahenta *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.contractorName} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     return null;
                   },
                   controller: contractorName,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Kwota netto *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.netAmount} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     double? num = double.tryParse(val);
-                    if (num == null || num <= 0) return "Kwota netto musi być większa od 0";
+                    if (num == null || num <= 0) return appLocalizations.netAmountMustBeBiggerThan0;
                     return null;
                   },
                   controller: netVal,
@@ -220,7 +199,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField(
-                  decoration: decoration.copyWith(labelText: "Stawka VAT *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.vatRate} *"),
                   value: vat,
                   items: [0, 7, 23]
                       .map((e) => DropdownMenuItem(
@@ -229,7 +208,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                           ))
                       .toList(),
                   validator: (val) {
-                    if (val == null) return "Wybierz stawkę VAT";
+                    if (val == null) return appLocalizations.selectVatRate;
                     return null;
                   },
                   onChanged: (val) {
@@ -242,12 +221,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  decoration: decoration.copyWith(labelText: "Kwota brutto *"),
+                  decoration: decoration.copyWith(labelText: "${appLocalizations.grossAmount} *"),
                   validator: (val) {
                     val?.trim();
-                    if (val == null || val.isEmpty) return "To pole nie może być puste";
+                    if (val == null || val.isEmpty) return appLocalizations.thisFieldCantBeEmpty;
                     double? num = double.tryParse(val);
-                    if (num == null || num <= 0) return "Kwota brutto musi być większa od 0";
+                    if (num == null || num <= 0) return appLocalizations.grossAmountMustBeBiggerThan0;
                     return null;
                   },
                   controller: grossVal,
@@ -257,7 +236,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   decoration: decoration.copyWith(
-                    labelText: "Załącznik *",
+                    labelText: "${appLocalizations.attachment} *",
                     prefixIcon: IconButton(
                       onPressed: () async {
                         FilePickerResult? result = await FilePicker.platform.pickFiles();
@@ -270,7 +249,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   ),
                   controller: attachmentName,
                   validator: (value) {
-                    if (value == null || value.isEmpty || (attachment == null && !isEditMode)) return "Dodaj załącznik";
+                    if (value == null || value.isEmpty || (attachment == null && !isEditMode)) {
+                      return appLocalizations.addAttachment;
+                    }
                     return null;
                   },
                   readOnly: true,
