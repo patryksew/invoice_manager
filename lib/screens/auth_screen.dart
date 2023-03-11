@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:invoice_manager/repositories/auth_repository.dart';
-import 'package:invoice_manager/screens/invoice_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:invoice_manager/screens/list_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -46,7 +46,7 @@ class _AuthScreenState extends State<AuthScreen> {
           appLocalizations: appLocalizations,
         );
       }
-      navigator.pushReplacement(MaterialPageRoute(builder: (_) => const InvoiceScreen()));
+      navigator.pushReplacement(MaterialPageRoute(builder: (_) => const ListScreen()));
     } on AuthException catch (e) {
       if (e.code == "wrong-password") {
         isWrongPassword = true;

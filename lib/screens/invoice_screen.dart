@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:invoice_manager/invoice_model.dart';
 import 'package:invoice_manager/providers/invoices_provider.dart';
-import 'package:invoice_manager/repositories/auth_repository.dart';
-import 'package:invoice_manager/screens/auth_screen.dart';
-import 'package:invoice_manager/screens/list_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -75,6 +72,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       isLoading = true;
     });
 
+    final navigator = Navigator.of(context);
+
     final netNum = num.parse(netVal.text);
     final grossNum = num.parse(grossVal.text);
 
@@ -89,22 +88,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       await invoicesProvider.createInvoice(data, attachment!);
     }
 
-    setState(() {
-      isLoading = false;
-    });
-
-    clearForm();
-  }
-
-  void clearForm() {
-    isLoading = false;
-    vat = null;
-    invoiceNo.clear();
-    contractorName.clear();
-    netVal.clear();
-    grossVal.clear();
-    attachmentName.clear();
-    attachment = null;
+    navigator.pop();
   }
 
   @override
@@ -139,23 +123,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditMode ? appLocalizations.editInvoice : appLocalizations.addNewInvoice),
-        leading: isEditMode
-            ? null
-            : IconButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ListScreen()));
-                },
-                icon: const Icon(Icons.list)),
-        actions: [
-          IconButton(
-              onPressed: () async {
-                final navigator = Navigator.of(context);
-                await AuthRepository.signOut();
-                navigator.pushReplacement(MaterialPageRoute(builder: (_) => const AuthScreen()));
-              },
-              icon: const Icon(Icons.logout)),
-          IconButton(onPressed: isLoading ? null : submit, icon: const Icon(Icons.save)),
-        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: isLoading ? null : submit,
+        child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.save),
       ),
       body: SingleChildScrollView(
         child: Form(
